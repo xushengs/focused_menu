@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'dart:ui';
+import 'dart:developer' as d;
 
 import 'package:flutter/material.dart';
 import 'package:focused_menu/src/models/focused_menu_item.dart';
@@ -45,6 +47,7 @@ class FocusedMenuDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    EdgeInsets safePadding = MediaQuery.of(context).padding;
 
     final maxMenuHeight = size.height * 0.45;
     final listHeight = menuItems.length * (itemExtent ?? 50.0);
@@ -54,10 +57,14 @@ class FocusedMenuDetails extends StatelessWidget {
     final leftOffset = (childOffset.dx + maxMenuWidth) < size.width
         ? childOffset.dx
         : (childOffset.dx - maxMenuWidth + childSize!.width);
-    final topOffset = (childOffset.dy + menuHeight + childSize!.height) <
-            size.height - bottomOffsetHeight!
+
+    double topOffset = (childOffset.dy + menuHeight + childSize!.height) <
+            size.height - safePadding.bottom - bottomOffsetHeight!
         ? childOffset.dy + childSize!.height + menuOffset!
         : childOffset.dy - menuHeight - menuOffset!;
+    if (topOffset < safePadding.top) {
+      topOffset = size.height - safePadding.bottom - menuHeight - menuOffset!;
+    }
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -76,6 +83,23 @@ class FocusedMenuDetails extends StatelessWidget {
                         (blurBackgroundColor ?? Colors.black).withOpacity(0.7),
                   ),
                 )),
+            Positioned(
+              top: childOffset.dy,
+              left: childOffset.dx,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: AbsorbPointer(
+                  absorbing: true,
+                  child: Container(
+                    width: childSize!.width,
+                    height: childSize!.height,
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               top: topOffset,
               left: leftOffset,
@@ -160,15 +184,6 @@ class FocusedMenuDetails extends StatelessWidget {
             ),
             if (toolbarActions != null)
               ToolbarActions(toolbarActions: toolbarActions!),
-            Positioned(
-                top: childOffset.dy,
-                left: childOffset.dx,
-                child: AbsorbPointer(
-                    absorbing: true,
-                    child: Container(
-                        width: childSize!.width,
-                        height: childSize!.height,
-                        child: child))),
           ],
         ),
       ),
